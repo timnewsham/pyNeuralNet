@@ -129,14 +129,14 @@ def test() :
             gB,gW = n.gradNum(i, t)
             n.update(0.01, gB, gW)
 
-    if 1 : # analytic back prop
+    if 0 : # analytic back prop
         for m in xrange(100) :
             gB,gW = n.grad2(i, t)
             n.update(0.01, gB, gW)
 
-    if 0 : # numeric grads vs analytic grads
+    if 1 : # numeric grads vs analytic grads
         GB,GW = n.gradNum(i, t)
-        gB,gW = n.grad(i, t)
+        gB,gW = n.grad2(i, t)
         for l in xrange(2) :
             print 'level', l+1
             print 'num B',
@@ -170,7 +170,7 @@ def test() :
 
     print n.err(i, t)
 
-    if 1 : # compare fwd/fwd2 for equality
+    if 0 : # compare fwd/fwd2 for equality
         print 'fwd1', n.fwd(i)
         print 'fwd2', n.fwd2(i)
 

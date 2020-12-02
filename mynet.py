@@ -4,6 +4,7 @@ Neural network with backprop training.
 """
 from math import exp
 import numpy as np
+import copy
 
 class Net(object) :
     def __init__(self, *size) :
@@ -74,6 +75,25 @@ class Net(object) :
             self.B[l] -= eps * gB[l]
             self.W[l] -= eps * gW[l]
 
+def checkGrads(eps, N, I, T) :
+    """Helper to see if grads are sane by comparing to numeric estimates."""
+    def gradB(l, i) :
+        n = copy.deepcopy(N)
+        n.B[l][i] -= eps
+        return (e0 - n.err(I, T)) / eps
+    def gradW(l, i, j) :
+        n = copy.deepcopy(N)
+        n.W[l][i,j] -= eps
+        return (e0 - n.err(I, T)) / eps
+    e0 = N.err(I, T)
+    gBs, gWs = N.grad(I, T)
+    for l,(gB, gW) in enumerate(zip(gBs, gWs)) :
+        n,m = gW.shape
+        gB2 = np.array([gradB(l, i) for i in xrange(n)])
+        gW2 = np.array([[gradW(l,i,j) for j in xrange(m)] for i in xrange(n)])
+        print 'err B', l, (gB2 - gB)
+        print 'err W', l, (gW2 - gW)
+
 def testTrain(n, i, t) :
     if 1 : # back prop
         for m in xrange(10000) :
@@ -93,11 +113,19 @@ def test() :
         t = np.array([0.5, 0.1])
         testTrain(n, i, t)
 
-    if 1 :
+    if 0 :
         n = Net(2,3,1)
         i = np.array([2,4])
         t = np.array([0.5])
         testTrain(n, i, t)
+
+    if 1 :
+        #n = Net(2,3,1)
+        n = Net(2,2,2)
+        i = np.array([2,4])
+        t = np.array([0.5])
+        print n.err(i, t)
+        checkGrads(0.0000001, n, i, t)
 
 if __name__ == '__main__' :
     test()
