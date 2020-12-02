@@ -62,7 +62,7 @@ class Net(object) :
             else :
                 # use previous level gZ to compute gX
                 Wprev = self.W[-rev + 1]
-                gX = np.dot(Wprev.T, gZ)
+                gX = np.dot(gZ.T, Wprev)
             gZ = gX * self.dNeuronFunc(self.Z[-rev])
 
             # accumulate gB/gW in reverse
@@ -120,8 +120,8 @@ def test() :
         testTrain(n, i, t)
 
     if 1 :
-        #n = Net(2,3,1)
-        n = Net(2,2,2)
+        n = Net(2,3,1)
+        #n = Net(2,2,2)
         i = np.array([2,4])
         t = np.array([0.5])
         print n.err(i, t)
