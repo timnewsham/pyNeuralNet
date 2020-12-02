@@ -2,8 +2,10 @@
 """
 MNIST data reader
 """
-import struct
+import random, struct
 import numpy as np
+
+from mynet import Net
 
 class Error(Exception) :
     pass
@@ -47,11 +49,56 @@ def show(arr) :
         row = arr[n*28 : (n+1)*28]
         print ''.join(pixChar(p) for p in row)
 
+def mkDigitVec(n) :
+    f = lambda m : 1.0 if m == n else 0.0
+    return np.array([f(m) for m in xrange(10)])
+
+def batchLearn(net, eps, bsz, nb, nl, dat) :
+    vec = [mkDigitVec(n) for n in xrange(10)]
+    for lcnt in xrange(nl) :
+        random.shuffle(dat)
+        batch = dat[:bsz]
+        for bcnt in xrange(nb) :
+            # average gradient over training batch
+            GB,GW = None,None
+            for lab,img in batch :
+                gB,gW = net.grad(img, vec[lab])
+                if GB is None :
+                    GB, GW = gB,gW
+                else :
+                    for x,y in zip(GB, gB) :
+                        x += y
+                    for x,y in zip(GW, gW) :
+                        x += y
+            for x in GB :
+                x *= (1.0 / nb)
+            for x in GW :
+                x *= (1.0 / nb)
+
+            net.update(eps, GB, GW)
+
+        if 1 :
+            err = sum(net.err(img, vec[lab]) for lab,img in batch) / nb
+            print 'avg batch error', err
+
+def main() :
+    dat = list(readVec('mnist/t10k'))
+    fn = 'mnist.net'
+    n = Net(784, 16, 16, 10)
+    try :
+        n.load(fn)
+    except Exception, e :
+        print 'cant load', e
+
+    batchLearn(n, 0.001, bsz=100, nb=1000, nl=10, dat=dat)
+    n.save(fn)
+
 def test() :
-    for lab,arr in readVec('t10k') :
+    for lab,arr in readVec('mnist/t10k') :
         print lab, "-------"
         show(arr)
         print
 
 if __name__ == '__main__' :
-    test()
+    #test()
+    main()

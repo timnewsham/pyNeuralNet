@@ -4,7 +4,7 @@ Neural network with backprop training.
 """
 from math import exp
 import numpy as np
-import copy
+import copy, pickle
 
 class SigmoidNeuron(object) :
     def neuronFunc(self, x) :
@@ -33,6 +33,13 @@ class NetBase(object) :
         for prev,cur in zip(size, size[1:]) :
             self.W.append( np.random.randn(cur, prev) )
             self.B.append( np.random.randn(cur) )
+
+    def save(self, fn) :
+        dat = (self.W, self.B)
+        pickle.dump(dat, file(fn, 'wb'))
+    def load(self, fn) :
+        dat = pickle.load(file(fn, 'r'))
+        self.W, self.B = dat
 
     def fwd(self, I) :
         X = I
@@ -127,12 +134,22 @@ def test() :
         t = np.array([0.5])
         testTrain(n, i, t)
 
-    if 1 :
+    if 0 :
         n = Net(2,3,4,1)
         i = np.array([2,4])
         t = np.array([0.5])
         print n.err(i, t)
         testGrads(0.0000001, n, i, t)
+
+    if 1 :
+        n = Net(2,3,4,1)
+        i = np.array([2,4])
+        print n.fwd(i)
+
+        n.save("test-save")
+        m = Net(2,3,4,1)
+        m.load("test-save")
+        print m.fwd(i)
 
 if __name__ == '__main__' :
     test()
