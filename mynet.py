@@ -6,16 +6,7 @@ from math import exp
 import numpy as np
 import copy
 
-class Net(object) :
-    def __init__(self, *size) :
-        """Size should be a list of number of nodes in each layer."""
-        self.W = []
-        self.B = []
-        for prev,cur in zip(size, size[1:]) :
-            self.W.append( np.random.randn(cur, prev) )
-            self.B.append( np.random.randn(cur) )
-
-    # sigmoid neurons
+class SigmoidNeuron(object) :
     def neuronFunc(self, x) :
         """Sigmoid neuron function."""
         return 1 / (1 + np.exp(-x))
@@ -24,6 +15,7 @@ class Net(object) :
         s = self.neuronFunc(x)
         return s * (1 - s)
 
+class SquareCost(object) :
     def costFunc(self, O, T) :
         """Square error function."""
         E = O - T
@@ -31,6 +23,16 @@ class Net(object) :
     def dCostFunc(self, O, T) :
         """Derivative of square error function."""
         return 2 * (O - T)
+
+
+class NetBase(object) :
+    def __init__(self, *size) :
+        """Size should be a list of number of nodes in each layer."""
+        self.W = []
+        self.B = []
+        for prev,cur in zip(size, size[1:]) :
+            self.W.append( np.random.randn(cur, prev) )
+            self.B.append( np.random.randn(cur) )
 
     def fwd(self, I) :
         X = I
@@ -47,7 +49,7 @@ class Net(object) :
         O = self.fwd(I)
         return self.costFunc(O, T)
 
-    def grad(self, I, T) :
+    def grad(self, I, T, retgX=False) :
         O = self.fwd(I)
 
         # denote  d(ERR)/dX = gX
@@ -68,6 +70,9 @@ class Net(object) :
             # accumulate gB/gW in reverse
             gB.insert(0, gZ)
             gW.insert(0, np.outer(gZ, self.X[-rev - 1]))
+        if retgX :
+            gX = np.dot(gZ.T, self.W[0])
+            return gX
         return gB, gW
 
     def update(self, eps, gB, gW) :
@@ -75,7 +80,10 @@ class Net(object) :
             self.B[l] -= eps * gB[l]
             self.W[l] -= eps * gW[l]
 
-def checkGrads(eps, N, I, T) :
+class Net(NetBase, SigmoidNeuron, SquareCost) :
+    pass
+
+def testGrads(eps, N, I, T) :
     """Helper to see if grads are sane by comparing to numeric estimates."""
     def gradB(l, i) :
         n = copy.deepcopy(N)
@@ -120,12 +128,11 @@ def test() :
         testTrain(n, i, t)
 
     if 1 :
-        n = Net(2,3,1)
-        #n = Net(2,2,2)
+        n = Net(2,3,4,1)
         i = np.array([2,4])
         t = np.array([0.5])
         print n.err(i, t)
-        checkGrads(0.0000001, n, i, t)
+        testGrads(0.0000001, n, i, t)
 
 if __name__ == '__main__' :
     test()
