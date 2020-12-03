@@ -4,7 +4,7 @@ Neural network with backprop training.
 """
 from math import exp
 import numpy as np
-import copy, pickle
+import copy, pickle, random
 
 class SigmoidNeuron(object) :
     def neuronFunc(self, x) :
@@ -54,7 +54,7 @@ class NetBase(object) :
 
     def err(self, I, T) :
         O = self.fwd(I)
-        return self.costFunc(O, T)
+        return self.costFunc(O, T) / len(O)
 
     def grad(self, I, T, retgX=False) :
         O = self.fwd(I)
@@ -89,6 +89,38 @@ class NetBase(object) :
 
 class Net(NetBase, SigmoidNeuron, SquareCost) :
     pass
+
+def batchErr(net, dat) :
+    return sum(net.err(inp, outp) for inp,outp in dat) / len(dat)
+
+def batchLearn(net, eps, bsz, nb, nl, dat, verbose=True) :
+    if verbose :
+        print "eps %f batch size %d batch iters %d loops %d" % (eps, bsz, nb, nl)
+    for lcnt in xrange(nl) :
+        random.shuffle(dat)
+        batch = dat[:bsz]
+        for bcnt in xrange(nb) :
+            # average gradient over training batch
+            GB,GW = None,None
+            for inp,outp in batch :
+                gB,gW = net.grad(inp, outp)
+                if GB is None :
+                    GB, GW = gB,gW
+                else :
+                    for x,y in zip(GB, gB) :
+                        x += y
+                    for x,y in zip(GW, gW) :
+                        x += y
+            for x in GB :
+                x *= (1.0 / nb)
+            for x in GW :
+                x *= (1.0 / nb)
+
+            net.update(eps, GB, GW)
+
+        if verbose :
+            print 'avg batch error', batchErr(net, batch)
+
 
 def testGrads(eps, N, I, T) :
     """Helper to see if grads are sane by comparing to numeric estimates."""

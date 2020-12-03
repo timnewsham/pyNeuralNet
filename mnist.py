@@ -5,7 +5,7 @@ MNIST data reader
 import argparse, random, struct
 import numpy as np
 
-from mynet import Net
+from mynet import Net, batchLearn, batchErr
 
 class Error(Exception) :
     pass
@@ -38,54 +38,54 @@ def readImg(basename) :
     # XXX convert into some displayable format to return
     pass
 
-def show(arr) :
-    def pixChar(p) :
-        if p > 0.5 :
-            return '*'
-        return ' '
+def pixChar(p) :
+    if p < 0.25 : return ' '
+    if p < 0.50 : return '.'
+    if p < 0.75 : return 'o'
+    return '*'
 
+def show(arr) :
     # assume 28x28
     for n in xrange(28) :
         row = arr[n*28 : (n+1)*28]
         print ''.join(pixChar(p) for p in row)
 
+def showImgVec(lab, img, vec) :
+    vlines = ['%d %02d%% %s' % (n, vec[n] * 100, '*' * int(vec[n]*10)) for n in xrange(10)]
+    ilines = [''.join(pixChar(p) for p in img[n*28 : (n+1)*28]) for n in xrange(28)]
+    ilines = ilines[4:-4]
+
+    slines = []
+    slines.append('label %d' % lab)
+    slines.append('')
+
+    best = [(prob,idx) for (idx,prob) in enumerate(vec)]
+    best.sort(reverse=True)
+    slines.append('best guesses:')
+    for p,n in best[:3] :
+        slines.append('%d %.2f%%' % (n, p))
+    slines.append('')
+    vlines = slines + vlines
+
+    while len(vlines) < len(ilines) :
+        vlines.append('')
+    print '--------------'
+    for v,i in zip(vlines, ilines) :
+        print i, v
+
+
 def mkDigitVec(n) :
     f = lambda m : 1.0 if m == n else 0.0
     return np.array([f(m) for m in xrange(10)])
 
-def batchLearn(net, eps, bsz, nb, nl, dat) :
-    vec = [mkDigitVec(n) for n in xrange(10)]
-    for lcnt in xrange(nl) :
-        random.shuffle(dat)
-        batch = dat[:bsz]
-        for bcnt in xrange(nb) :
-            # average gradient over training batch
-            GB,GW = None,None
-            for lab,img in batch :
-                gB,gW = net.grad(img, vec[lab])
-                if GB is None :
-                    GB, GW = gB,gW
-                else :
-                    for x,y in zip(GB, gB) :
-                        x += y
-                    for x,y in zip(GW, gW) :
-                        x += y
-            for x in GB :
-                x *= (1.0 / nb)
-            for x in GW :
-                x *= (1.0 / nb)
-
-            net.update(eps, GB, GW)
-
-        if 1 :
-            err = sum(net.err(img, vec[lab]) for lab,img in batch) / nb
-            print 'avg batch error', err
-
 def getopt() :
     p = argparse.ArgumentParser(description='digit recognizer')
     p.add_argument('-t', dest='train', action="store_true", default=False)
-    p.add_argument('-e', dest='eps', type=float, default=0.00001, help="epsilon for training")
+    p.add_argument('-e', dest='eps', type=float, default=0.1, help="epsilon for training")
     p.add_argument('-f', dest='nfile', default='mnist.net')
+    p.add_argument('-l', dest='loops', type=int, default=100)
+    p.add_argument('-b', dest='batch', type=int, default=100)
+    p.add_argument('-B', dest='bsize', type=int, default=1000)
     opt = p.parse_args()
     return opt
 
@@ -96,12 +96,14 @@ def train(opt) :
     except Exception, e :
         print 'cant load', e
 
-    dat = list(readVec('mnist/t10k'))
+    dat = [(img, mkDigitVec(lab)) for lab,img in readVec('mnist/t10k')]
+    print "initial error", batchErr(n, dat)
     try :
-        batchLearn(n, opt.eps, bsz=100, nb=1000, nl=10, dat=dat)
+        batchLearn(n, opt.eps, bsz=opt.batch, nb=opt.bsize, nl=opt.loops, dat=dat)
     except KeyboardInterrupt :
         print "interrupted"
         opt.nfile += "-int"
+    print "final error", batchErr(n, dat)
     print "saving", opt.nfile
     n.save(opt.nfile)
 
@@ -113,12 +115,8 @@ def ident(opt) :
     dat = list(readVec('mnist/t10k'))
     random.shuffle(dat)
     for lab,img in dat[:10] :
-        show(img)
-        best = [(prob,idx) for (idx,prob) in enumerate(net.fwd(img))]
-        best.sort(reverse=True)
-        print "label", lab
-        for p,n in best[:3] :
-            print n, '%%%1.f' % (100.0 * p)
+        vec = net.fwd(img)
+        showImgVec(lab, img, vec)
 
 def main() :
     opt = getopt()
