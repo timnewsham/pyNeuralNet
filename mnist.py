@@ -65,6 +65,7 @@ def showImgVec(lab, img, vec) :
     for p,n in best[:3] :
         slines.append('%d %.2f%%' % (n, p))
     slines.append('')
+    #slines.append(', '.join('%.3f' % v for v in vec))
     vlines = slines + vlines
 
     while len(vlines) < len(ilines) :
@@ -86,6 +87,7 @@ def getopt() :
     p.add_argument('-l', dest='loops', type=int, default=100)
     p.add_argument('-b', dest='batch', type=int, default=100)
     p.add_argument('-B', dest='bsize', type=int, default=1000)
+    p.add_argument('-E', dest='enhance', action='store_true', default=False)
     opt = p.parse_args()
     return opt
 
@@ -97,13 +99,15 @@ def train(opt) :
         print 'cant load', e
 
     dat = [(img, mkDigitVec(lab)) for lab,img in readVec('mnist/t10k')]
-    print "initial error", batchErr(n, dat)
+    e0 = batchErr(n, dat)
+    print "initial error", e0
     try :
         batchLearn(n, opt.eps, bsz=opt.batch, nb=opt.bsize, nl=opt.loops, dat=dat)
     except KeyboardInterrupt :
         print "interrupted"
         opt.nfile += "-int"
-    print "final error", batchErr(n, dat)
+    print "initial error", e0
+    print "  final error", batchErr(n, dat)
     print "saving", opt.nfile
     n.save(opt.nfile)
 
@@ -118,10 +122,29 @@ def ident(opt) :
         vec = net.fwd(img)
         showImgVec(lab, img, vec)
 
+def enhance(opt) :
+    net = Net(784, 16, 16, 10)
+    net.load(opt.nfile)
+    dat = list(readVec('mnist/t10k'))
+    lab,img = random.choice(dat)
+    vec = net.fwd(img)
+    showImgVec(lab, img, vec)
+
+    # use gradient to improve img for ideal output
+    train = mkDigitVec(lab)
+    cnt = 10000
+    for m in xrange(cnt) :
+        g = net.grad(img, train, retgX=True)
+        img -= opt.eps * g
+    vec = net.fwd(img)
+    showImgVec(lab, img, vec)
+
 def main() :
     opt = getopt()
     if opt.train :
         train(opt)
+    elif opt.enhance :
+        enhance(opt)
     else :
         ident(opt)
 
