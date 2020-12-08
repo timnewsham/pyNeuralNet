@@ -55,12 +55,14 @@ def showImgVec(lab, img, vec) :
     ilines = [''.join(pixChar(p) for p in img[n*28 : (n+1)*28]) for n in xrange(28)]
     ilines = ilines[4:-4]
 
-    slines = []
-    slines.append('label %d' % lab)
-    slines.append('')
-
     best = [(prob,idx) for (idx,prob) in enumerate(vec)]
     best.sort(reverse=True)
+
+    slines = []
+    disp = "correct" if best[0][1] == lab else "wrong"
+    slines.append('label %d (%s)' % (lab, disp))
+    slines.append('')
+
     slines.append('best guesses:')
     for p,n in best[:3] :
         slines.append('%d %.2f%%' % (n, p))
@@ -81,9 +83,9 @@ def mkDigitVec(n) :
 
 def getopt() :
     p = argparse.ArgumentParser(description='digit recognizer')
+    p.add_argument('-f', dest='nfile', default='mnist.net')
     p.add_argument('-t', dest='train', action="store_true", default=False)
     p.add_argument('-e', dest='eps', type=float, default=0.1, help="epsilon for training")
-    p.add_argument('-f', dest='nfile', default='mnist.net')
     p.add_argument('-l', dest='loops', type=int, default=100)
     p.add_argument('-b', dest='batch', type=int, default=100)
     p.add_argument('-B', dest='bsize', type=int, default=1000)

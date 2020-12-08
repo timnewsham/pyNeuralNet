@@ -138,8 +138,8 @@ def testGrads(eps, N, I, T) :
         n,m = gW.shape
         gB2 = np.array([gradB(l, i) for i in xrange(n)])
         gW2 = np.array([[gradW(l,i,j) for j in xrange(m)] for i in xrange(n)])
-        print 'err B', l, (gB2 - gB)
-        print 'err W', l, (gW2 - gW)
+        print 'ratio B to numeric', l, (gB / gB2)
+        print 'ratio W to numeric', l, (gW / gW2)
 
 def testTrain(n, i, t) :
     if 1 : # back prop
@@ -166,14 +166,14 @@ def test() :
         t = np.array([0.5])
         testTrain(n, i, t)
 
-    if 0 :
+    if 1 :
         n = Net(2,3,4,1)
         i = np.array([2,4])
         t = np.array([0.5])
         print n.err(i, t)
         testGrads(0.0000001, n, i, t)
 
-    if 1 :
+    if 0 :
         n = Net(2,3,4,1)
         i = np.array([2,4])
         print n.fwd(i)

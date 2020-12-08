@@ -1,0 +1,16 @@
+
+- vectorize training by providing training inputs and outputs as an array.
+  - compare training speeds
+- implement different neuron types and test against numeric
+  - htan
+  - max(x, 0)
+- implement a better cost function
+
+- refine input based on best guess of output, using backrop to X0
+- try training multiple nets in parallel and taking majority output
+  - can nets cross-train each other in in some kind of echo chamber?
+  - can values from one net help form new nets that work well?
+- try generating multiple random nets to find which one is best to start with
+  or find which ones seem to train fastest
+- try making a generative network for digits using mnist
+
