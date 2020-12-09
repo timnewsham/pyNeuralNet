@@ -2,9 +2,10 @@
 """
 neural net for mnist digit data
 """
+from mynet import *
 from mnist import *
 
-net = Net(784, 30, 10)
+net = mkNet(TanhNeuron, SquareCost, 784, 30, 10)
 
 def getopt() :
     p = argparse.ArgumentParser(description='digit recognizer')
@@ -13,8 +14,9 @@ def getopt() :
     p.add_argument('-t', dest='train', action="store_true", default=False)
     p.add_argument('-e', dest='eps', type=float, default=3.0, help="epsilon for training")
     p.add_argument('-l', dest='loops', type=int, default=100)
-    p.add_argument('-b', dest='batch', type=int, default=10)
-    p.add_argument('-B', dest='bsize', type=int, default=30)
+    p.add_argument('-L', dest='lamb', type=float, default=0.1)
+    p.add_argument('-b', dest='batch', type=int, default=100)
+    p.add_argument('-B', dest='bloops', type=int, default=1)
     p.add_argument('-E', dest='enhance', action='store_true', default=False)
     opt = p.parse_args()
     return opt
@@ -26,15 +28,15 @@ def train(opt) :
         print 'cant load', e
 
     dat = [(img, mkDigitVec(lab)) for lab,img in readVec('mnist/t10k')]
-    e0 = batchErr(net, dat)
+    e0 = batchErr(net, dat, lamb=opt.lamb)
     print "initial error", e0
     try :
-        batchLearn(net, opt.eps, bsz=opt.batch, nb=opt.bsize, nl=opt.loops, dat=dat)
+        batchLearn(net, opt.eps, bsz=opt.batch, nb=opt.bloops, nl=opt.loops, lamb=opt.lamb, dat=dat)
     except KeyboardInterrupt :
         print "interrupted"
         opt.nfile += "-int"
     print "initial error", e0
-    print "  final error", batchErr(net, dat)
+    print "  final error", batchErr(net, dat, lamb=opt.lamb)
     print "saving", opt.nfile
     net.save(opt.nfile)
 
